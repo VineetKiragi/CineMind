@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: cinemind-backend
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      mkdir -p data/faiss_index
+      curl -L -o faiss_index.zip https://github.com/VineetKiragi/CineMind/releases/download/v1.0-faiss/faiss_index.zip
+      unzip faiss_index.zip -d data/faiss_index
+    startCommand: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
