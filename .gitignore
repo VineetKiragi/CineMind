@@ -87,3 +87,11 @@ outputs/
 *.tmp
 *.bak
 *.swp
+
+# Next.js / Frontend
+node_modules/
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
