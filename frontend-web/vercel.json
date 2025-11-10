@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd frontend-web && npm run build",
+  "outputDirectory": "frontend-web/.next",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
