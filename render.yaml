@@ -1,14 +1,16 @@
+# .render.yaml
+# ---------------------------------------------------------
+# 🧩 CineMind backend deployment configuration for Render.
+# Downloads FAISS automatically at runtime (no re-embedding).
+
 services:
   - type: web
     name: cinemind-backend
     env: python
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt
-      mkdir -p data/faiss_index
-      curl -L -o faiss_index.zip https://github.com/VineetKiragi/CineMind/releases/download/v0.1.0/faiss_index.zip
-      unzip -o faiss_index.zip -d data/faiss_index
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend.api:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true
     envVars:
       - key: OPENAI_API_KEY
         sync: false

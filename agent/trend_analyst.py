@@ -1,29 +1,45 @@
-# trend_analyst.py
+# agent/trend_analyst.py
 # ---------------------------------------------------------
 # 🎯 Purpose: Retrieve semantically relevant movies from FAISS index
-# based on structured preferences from the User Profiler Agent.
+# using precomputed embeddings (downloaded once if missing).
 
 import os
 import json
+import zipfile
+import urllib.request
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
+# === Load API key ===
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+# === Constants ===
+FAISS_DIR = "data/faiss_index"
+FAISS_URL = "https://github.com/VineetKiragi/CineMind/releases/download/v0.1.0/faiss_index.zip"
+FAISS_ZIP = os.path.join(FAISS_DIR, "faiss_index.zip")
+os.makedirs(FAISS_DIR, exist_ok=True)
+
+# === Ensure FAISS index is present ===
+if not os.path.exists(os.path.join(FAISS_DIR, "index.faiss")):
+    print("⚠️ FAISS index missing — downloading from GitHub release...")
+    try:
+        urllib.request.urlretrieve(FAISS_URL, FAISS_ZIP)
+        with zipfile.ZipFile(FAISS_ZIP, "r") as zip_ref:
+            zip_ref.extractall(FAISS_DIR)
+        print("✅ FAISS index downloaded and extracted successfully.")
+    except Exception as e:
+        raise RuntimeError(f"❌ Failed to download FAISS index: {e}")
+
 # === Load FAISS index ===
-FAISS_PATH = "data/faiss_index"
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large", api_key=openai_api_key)
-vectorstore = FAISS.load_local(FAISS_PATH, embeddings, allow_dangerous_deserialization=True)
+vectorstore = FAISS.load_local(FAISS_DIR, embeddings, allow_dangerous_deserialization=True)
 
 
 # === Utility ===
 def build_search_prompt(profile_json: str):
-    """
-    Converts structured preferences into a natural query string
-    for semantic search.
-    """
+    """Converts structured user preferences into a natural query string."""
     try:
         profile = json.loads(profile_json)
     except json.JSONDecodeError:
@@ -41,16 +57,12 @@ def build_search_prompt(profile_json: str):
     if profile.get("other_preferences"):
         parts.append(f"themes: {', '.join(profile['other_preferences'])}")
 
-    query = "Recommend movies that match " + ", ".join(parts)
-    return query
+    return "Recommend movies that match " + ", ".join(parts)
 
 
 # === Core Retrieval ===
 def analyze_trends(profile_json: str, k=5):
-    """
-    Uses the FAISS vectorstore to find matching movies.
-    Returns a list of top candidate movie metadata.
-    """
+    """Queries the FAISS vectorstore and returns ranked recommendations."""
     query = build_search_prompt(profile_json)
     print(f"\n🔍 Trend Analyst Query: {query}\n")
 
@@ -79,7 +91,7 @@ def analyze_trends(profile_json: str, k=5):
 
 
 if __name__ == "__main__":
-    # Simulate profile output from User Profiler
+    # Test mode
     sample_profile = json.dumps({
         "genres": ["romance", "comedy"],
         "tone": ["light-hearted"],
@@ -87,5 +99,4 @@ if __name__ == "__main__":
         "people": [],
         "other_preferences": ["feel-good", "happy ending"]
     })
-
     analyze_trends(sample_profile)
